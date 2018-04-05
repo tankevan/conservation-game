@@ -15,7 +15,7 @@ gameScene.init = function() {
   this.targetY = null;
   this.targetName = null;
   this.targetObj = null;
-  this.startingHealth = 3;
+  this.startingHealth = 500;
   this.globalHealth = this.startingHealth;
 
   this.onHand = null;
@@ -58,7 +58,7 @@ gameScene.create = function() {
   this.recyclingBin.setInteractive();
   this.recyclingBin.name = "recyclingBin";
   this.recyclingBin.on('pointerup', function(pointer) {
-    gameScene.clickedSprite(pointer, gameScene.recyclingBin.name);
+    gameScene.clickedSprite(pointer, gameScene.recyclingBin.name, gameScene.recyclingBin);
   })
 
   // player is alive
@@ -106,19 +106,45 @@ function addTrash() {
                           .setInteractive();
 
     trash.name = "trash";
+    trash.clicked = false;
     trash.on('pointerup', function (pointer) {
       const name = this.name; // pass name of object for identification
       gameScene.clickedSprite(pointer, name, this);
     });
+    // trash.on('pointerout', function (pointer) {
+    //   gameScene.unclickedSprite(this.x, this.y);
+    // })
 
     this.trashGroup.add(trash);
   }
 }
 
-gameScene.clickedSprite = function(pointer, name, objRef=null) {
-  // this.targetX = pointer.x;
-  // this.targetY = pointer.y;
-  this.gameActions.push([pointer.x, pointer.y, name, objRef]);
+gameScene.clickedSprite = function(pointer, name, objRef) {
+  if (!objRef.clicked && name !== 'recyclingBin') {
+    objRef.clicked = true;
+    this.gameActions.push([objRef.x, objRef.y, name, objRef]);
+  } else if (objRef.clicked && name !== 'recyclingBin') {
+    objRef.clicked = false;
+    this.removeAction(objRef.x, objRef.y);
+  } else {
+    this.gameActions.push([objRef.x, objRef.y, name, objRef]);
+  }
+}
+
+gameScene.removeAction = function(xPos, yPos) {
+  this.gameActions.forEach((value, index) => {
+    if (value[0] === xPos && value[1] === yPos) {
+      console.log("deleting action");
+      if (this.gameActions.length >= index + 2 && this.gameActions[index+1][2] == 'recyclingBin') {
+        this.gameActions.splice(index, 2);
+      } else {
+        this.gameActions.splice(index, 1);
+      }
+      this.targetX = null;
+      this.targetY = null;
+      this.targetName = null;
+    }
+  })
 }
 
 // ***************************
@@ -134,20 +160,22 @@ gameScene.update = function() {
   }
 
   // resolve previous action since coord is reached
-  if (!this.targetX && !this.targetY) {
+  if (!this.targetX && !this.targetY && this.targetName) {
     if (this.targetName === "trash") {
       if (!this.onHand) { this.reachTrash(this.targetObj) }
     } else if (this.targetName === "recyclingBin") {
       if (this.onHand) { this.reachRecycling() }
     }
+
+    this.targetName = null;
+    this.gameActions.shift();
   }
   
 
   // updates with next action if no curr action
   if (!this.targetX && !this.targetY && this.gameActions.length > 0) {
-    
     // add next coordinate to list
-    const newCoord = this.gameActions.shift();
+    const newCoord = this.gameActions[0];
     this.targetX = newCoord[0];
     this.targetY = newCoord[1];
     this.targetName = newCoord[2];
@@ -156,7 +184,7 @@ gameScene.update = function() {
 
   
   // move player when new position clicked
-  if (this.targetX && Math.abs(this.player.x - this.targetX) > 1) {
+  if (this.targetX && Math.abs(this.player.x - this.targetX) > 2) {
     if (this.player.x > this.targetX) {
       this.movePlayer(-this.playerSpeed, 0); // move x by playerSpeed and y by 0
     } else {
@@ -166,7 +194,7 @@ gameScene.update = function() {
     this.targetX = null; // set target to null when x-coord reached
   }
 
-  if (this.targetY && Math.abs(this.player.y - this.targetY) > 1) {
+  if (this.targetY && Math.abs(this.player.y - this.targetY) > 2) {
     if (this.player.y > this.targetY) {
       this.movePlayer(0, -this.playerSpeed);
     } else {
