@@ -11,12 +11,15 @@ let gameScene = new Phaser.Scene('Game');
 // some parameters for our scene
 gameScene.init = function() {
   this.playerSpeed = 2.5;
-  this.targetX = 40;
-  this.targetY = this.sys.game.config.height / 2;
-  this.startingHealth = 50;
+  this.targetX = null;
+  this.targetY = null;
+  this.targetName = null;
+  this.targetObj = null;
+  this.startingHealth = 3;
   this.globalHealth = this.startingHealth;
 
   this.onHand = null;
+  this.gameActions = []; // contains arrays of [x, y, name, obj]
 }
 
 // load asset files for our game
@@ -28,6 +31,11 @@ gameScene.preload = function() {
   this.load.image('dragon', 'assets/dragon.png');
   this.load.image('treasure', 'assets/treasure.png');
 };
+
+
+// ***************************
+// *** GAME CREATE SECTION ***
+// ***************************
 
 // executed once, after assets were loaded
 gameScene.create = function() {
@@ -47,6 +55,11 @@ gameScene.create = function() {
   // add dragon trash bin
   this.recyclingBin = this.add.sprite(30, 80, 'dragon');
   this.recyclingBin.setScale(0.5);
+  this.recyclingBin.setInteractive();
+  this.recyclingBin.name = "recyclingBin";
+  this.recyclingBin.on('pointerup', function(pointer) {
+    gameScene.clickedSprite(pointer, gameScene.recyclingBin.name);
+  })
 
   // player is alive
   this.isPlayerAlive = true;
@@ -62,6 +75,7 @@ gameScene.create = function() {
   globalHealthText = this.add.text(10, 10, this.globalHealth);
 
   // set timer to create trash every 2 seconds
+  console.log(this.trashGroup);
   this.trashGroup = this.add.group();
 
   this.trashEvent = this.time.addEvent({
@@ -71,6 +85,8 @@ gameScene.create = function() {
     loop: true,
   });
 };
+
+// *** CREATE SUB-FUNCTIONS *** 
 
 function countDown() {
   if (this.globalHealth > 0) {
@@ -85,10 +101,29 @@ function addTrash() {
   if (this.trashGroup.children.size < 5) {
     const trashX = Math.random() * this.sys.game.config.width;
     const trashY = Math.random() * this.sys.game.config.height;
-    const trash = this.add.sprite(trashX, trashY, 'treasure').setScale(0.6);
+    const trash = this.add.sprite(trashX, trashY, 'treasure')
+                          .setScale(0.6)
+                          .setInteractive();
+
+    trash.name = "trash";
+    trash.on('pointerup', function (pointer) {
+      const name = this.name; // pass name of object for identification
+      gameScene.clickedSprite(pointer, name, this);
+    });
+
     this.trashGroup.add(trash);
   }
 }
+
+gameScene.clickedSprite = function(pointer, name, objRef=null) {
+  // this.targetX = pointer.x;
+  // this.targetY = pointer.y;
+  this.gameActions.push([pointer.x, pointer.y, name, objRef]);
+}
+
+// ***************************
+// *** GAME UPDATE SECTION ***
+// ***************************
 
 // executed on every frame (60 times per second)
 gameScene.update = function() {
@@ -98,48 +133,52 @@ gameScene.update = function() {
     return;
   }
 
-  // check for active input
-  if (this.input.activePointer.isDown) {
-    // player walks
-    this.targetX = this.input.activePointer.x;
-    this.targetY = this.input.activePointer.y;
+  // resolve previous action since coord is reached
+  if (!this.targetX && !this.targetY) {
+    if (this.targetName === "trash") {
+      if (!this.onHand) { this.reachTrash(this.targetObj) }
+    } else if (this.targetName === "recyclingBin") {
+      if (this.onHand) { this.reachRecycling() }
+    }
   }
   
+
+  // updates with next action if no curr action
+  if (!this.targetX && !this.targetY && this.gameActions.length > 0) {
+    
+    // add next coordinate to list
+    const newCoord = this.gameActions.shift();
+    this.targetX = newCoord[0];
+    this.targetY = newCoord[1];
+    this.targetName = newCoord[2];
+    this.targetObj = newCoord[3];
+  }
+
+  
   // move player when new position clicked
-  if (Math.abs(this.player.x - this.targetX) > 1) {
+  if (this.targetX && Math.abs(this.player.x - this.targetX) > 1) {
     if (this.player.x > this.targetX) {
       this.movePlayer(-this.playerSpeed, 0); // move x by playerSpeed and y by 0
     } else {
       this.movePlayer(this.playerSpeed, 0);
     }
+  } else {
+    this.targetX = null; // set target to null when x-coord reached
   }
 
-  if (Math.abs(this.player.y - this.targetY) > 1) {
+  if (this.targetY && Math.abs(this.player.y - this.targetY) > 1) {
     if (this.player.y > this.targetY) {
       this.movePlayer(0, -this.playerSpeed);
     } else {
       this.movePlayer(0, this.playerSpeed);
     }
+  } else {
+    this.targetY = null;
   }
 
-  // check for collision with trash and no item onHand
-  Phaser.Actions.Call(this.trashGroup.getChildren(), (trash) => {
-    if (Phaser.Geom.Intersects.RectangleToRectangle(this.player.getBounds(), trash.getBounds()) && !this.onHand) {
-      this.trashGroup.remove(trash);
-      this.onHand = trash;
-      trash.x = this.player.x;
-      trash.y = this.player.y;
-    }
-  });
-
-  // check if player is at recycling bin and item onHand
-  if (Phaser.Geom.Intersects.RectangleToRectangle(this.player.getBounds(), this.recyclingBin.getBounds()) && this.onHand) {
-    this.onHand.destroy();
-    this.globalHealth += 10;
-    globalHealthText.setText(this.globalHealth);
-    this.onHand = null;
-  }
 };
+
+// *** UPDATE SUB-FUNCTIONS *** 
 
 gameScene.movePlayer = function(xMove, yMove) {
   this.player.x += xMove;
@@ -150,6 +189,23 @@ gameScene.movePlayer = function(xMove, yMove) {
   }
 }
 
+gameScene.reachTrash = function(trash) {
+  this.trashGroup.remove(trash);
+  this.onHand = trash;
+  trash.x = this.player.x;
+  trash.y = this.player.y;
+}
+
+gameScene.reachRecycling = function() {
+  this.onHand.destroy();
+  this.globalHealth += 10;
+  globalHealthText.setText(this.globalHealth);
+  this.onHand = null;
+}
+
+// *************************
+// *** GAME OVER SECTION ***
+// ************************* 
 gameScene.gameOver = function() {
 
   // flag to set player is dead
@@ -173,8 +229,12 @@ gameScene.gameOver = function() {
     this.cameras.main.resetFX();
   }, [], this);
 
-  // destroy timerEvent
-  this.timedEvent.destroy();
+  // clear variables
+  this.timedEvent.destroy(); // destroy timer event
+  this.trashEvent.destroy(); // destroy trash event
+  this.trashGroup.children.clear();
+  
+
 };
 
 // our game's configuration
