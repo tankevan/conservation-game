@@ -20,6 +20,7 @@ gameScene.init = function() {
 
   this.onHand = null;
   this.gameActions = []; // contains arrays of [x, y, name, obj]
+  this.updateNumbers = false;
 }
 
 // load asset files for our game
@@ -75,7 +76,6 @@ gameScene.create = function() {
   globalHealthText = this.add.text(10, 10, this.globalHealth);
 
   // set timer to create trash every 2 seconds
-  console.log(this.trashGroup);
   this.trashGroup = this.add.group();
 
   this.trashEvent = this.time.addEvent({
@@ -84,6 +84,19 @@ gameScene.create = function() {
     callbackScope: this,
     loop: true,
   });
+
+  // set timer to create animal every 5 seconds
+  this.animalGroup = this.add.group();
+
+  this.animalEvent = this.time.addEvent({
+    delay: 1000,
+    callback: addAnimal,
+    callbackScope: this,
+    loop: true,
+  });
+
+  // creates empty game action order group
+  this.orderGroup = this.add.group();
 };
 
 // *** CREATE SUB-FUNCTIONS *** 
@@ -119,6 +132,24 @@ function addTrash() {
   }
 }
 
+function addAnimal() {
+  if (this.animalGroup.children.size < 5) {
+    const animalX = Math.random() * this.sys.game.config.width;
+    const animalY = Math.random() * this.sys.game.config.height;
+    const animal = this.add.sprite(animalX, animalY, 'dragon')
+                           .setScale(0.3)
+                           .setInteractive();
+    
+    animal.name = "animal";
+    animal.clicked = false;
+    animal.on('pointerup', function (pointer) {
+      gameScene.clickedSprite(pointer, this.name, this);
+    })
+
+    this.animalGroup.add(animal);
+  }
+}
+
 gameScene.clickedSprite = function(pointer, name, objRef) {
   if (!objRef.clicked && name !== 'recyclingBin') {
     objRef.clicked = true;
@@ -129,6 +160,7 @@ gameScene.clickedSprite = function(pointer, name, objRef) {
   } else {
     this.gameActions.push([objRef.x, objRef.y, name, objRef]);
   }
+  this.updateNumbers = true;
 }
 
 gameScene.removeAction = function(xPos, yPos) {
@@ -165,16 +197,24 @@ gameScene.update = function() {
       if (!this.onHand) { this.reachTrash(this.targetObj) }
     } else if (this.targetName === "recyclingBin") {
       if (this.onHand) { this.reachRecycling() }
+    } else if (this.targetName === 'animal') {
+      if (!this.onHand) {
+        console.log('reached animal');
+        this.time.delayedCall(2000, function() {
+          gameScene.reachAnimal(gameScene.targetObj);
+        }, [], this);
+      }
     }
 
     this.targetName = null;
     this.gameActions.shift();
+    this.updateNumbers = true;
   }
   
 
   // updates with next action if no curr action
   if (!this.targetX && !this.targetY && this.gameActions.length > 0) {
-    // add next coordinate to list
+    // sets next coordinate as target
     const newCoord = this.gameActions[0];
     this.targetX = newCoord[0];
     this.targetY = newCoord[1];
@@ -182,7 +222,6 @@ gameScene.update = function() {
     this.targetObj = newCoord[3];
   }
 
-  
   // move player when new position clicked
   if (this.targetX && Math.abs(this.player.x - this.targetX) > 2) {
     if (this.player.x > this.targetX) {
@@ -204,6 +243,18 @@ gameScene.update = function() {
     this.targetY = null;
   }
 
+  // update text of ordering of actions
+  if (this.updateNumbers) {
+    this.orderGroup.children.each((label) => {
+      label.destroy();
+    })
+    this.orderGroup.children.clear();
+    this.gameActions.forEach((value, index) => {
+      const txt = this.add.text(value[0], value[1], index + 1)
+      this.orderGroup.add(txt);
+    })
+    this.updateNumbers = false;
+  }
 };
 
 // *** UPDATE SUB-FUNCTIONS *** 
@@ -222,6 +273,11 @@ gameScene.reachTrash = function(trash) {
   this.onHand = trash;
   trash.x = this.player.x;
   trash.y = this.player.y;
+}
+
+gameScene.reachAnimal = function(animal) {
+  this.animalGroup.remove(animal);
+  animal.destroy();
 }
 
 gameScene.reachRecycling = function() {
