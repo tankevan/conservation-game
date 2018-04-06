@@ -10,6 +10,7 @@ let gameScene = new Phaser.Scene('Game');
 
 // some parameters for our scene
 gameScene.init = function() {
+  this.canMove = true;
   this.playerSpeed = 2.5;
   this.targetX = null;
   this.targetY = null;
@@ -199,13 +200,15 @@ gameScene.update = function() {
       if (this.onHand) { this.reachRecycling() }
     } else if (this.targetName === 'animal') {
       if (!this.onHand) {
-        console.log('reached animal');
+        this.canMove = false;
+        console.log(this.canMove);
+        const currObj = gameScene.targetObj;
         this.time.delayedCall(2000, function() {
-          gameScene.reachAnimal(gameScene.targetObj);
+          gameScene.reachAnimal(currObj);
         }, [], this);
       }
     }
-
+  
     this.targetName = null;
     this.gameActions.shift();
     this.updateNumbers = true;
@@ -213,7 +216,7 @@ gameScene.update = function() {
   
 
   // updates with next action if no curr action
-  if (!this.targetX && !this.targetY && this.gameActions.length > 0) {
+  if (this.canMove && !this.targetX && !this.targetY && this.gameActions.length > 0) {
     // sets next coordinate as target
     const newCoord = this.gameActions[0];
     this.targetX = newCoord[0];
@@ -223,7 +226,7 @@ gameScene.update = function() {
   }
 
   // move player when new position clicked
-  if (this.targetX && Math.abs(this.player.x - this.targetX) > 2) {
+  if (this.canMove && this.targetX && Math.abs(this.player.x - this.targetX) > 2) {
     if (this.player.x > this.targetX) {
       this.movePlayer(-this.playerSpeed, 0); // move x by playerSpeed and y by 0
     } else {
@@ -278,6 +281,8 @@ gameScene.reachTrash = function(trash) {
 gameScene.reachAnimal = function(animal) {
   this.animalGroup.remove(animal);
   animal.destroy();
+  this.canMove = true;
+  console.log(this.canMove);
 }
 
 gameScene.reachRecycling = function() {
