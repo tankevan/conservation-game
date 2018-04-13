@@ -235,7 +235,7 @@ gameScene.update = function() {
   }
 
   // move player when new position clicked
-  if ( this.player.canMove &&  this.player.targetX && Math.abs( this.player.x -  this.player.targetX) > 2) {
+  if ( this.player.targetX && Math.abs( this.player.x -  this.player.targetX) > 2) {
     if (this.player.x >  this.player.targetX) {
       this.movePlayer(this.player, -this.playerSpeed, 0); // move x by playerSpeed and y by 0
     } else {
@@ -258,7 +258,7 @@ gameScene.update = function() {
   // !! helper behavior
   this.helperGroup.children.each((helper) => {
     // if at item, perform action
-    if (! helper.targetX && ! helper.targetY &&  helper.targetName) {
+    if (!helper.targetX && !helper.targetY && helper.targetName) {
       if ( helper.targetName === "trash") {
         if (! helper.onHand) { this.reachTrash(helper,  helper.targetObj) }
       } else if ( helper.targetName === "recyclingBin") {
@@ -266,7 +266,6 @@ gameScene.update = function() {
       } else if ( helper.targetName === 'animal') {
         if (!helper.onHand) {
           helper.canMove = false;
-          console.log(helper.canMove);
           const currObj = helper.targetObj;
           this.time.delayedCall(2000, function() {
             gameScene.reachAnimal(helper, currObj);
@@ -280,7 +279,7 @@ gameScene.update = function() {
     }
 
     // if no targetX and targetY, get new action
-    if (!helper.targetX && !helper.targetY) {
+    if (helper.canMove && !helper.targetX && !helper.targetY) {
       if (helper.onHand) {
         const target = gameScene.recyclingBin;
         helper.targetX = target.x;
@@ -322,7 +321,7 @@ gameScene.update = function() {
     }
 
     // if not at targetX and targetY, move there
-    if (helper.canMove && helper.targetX && Math.abs(helper.x - helper.targetX) > 2) {
+    if (helper.targetX && Math.abs(helper.x - helper.targetX) > 2) {
       if (helper.x > helper.targetX) {
         this.movePlayer(helper, -helper.playerSpeed, 0); // move x by playerSpeed and y by 0
       } else {
@@ -332,7 +331,7 @@ gameScene.update = function() {
       helper.targetX = null; // set target to null when x-coord reached
     }
   
-    if (helper.canMove && helper.targetY && Math.abs(helper.y - helper.targetY) > 2) {
+    if (helper.targetY && Math.abs(helper.y - helper.targetY) > 2) {
       if (helper.y > helper.targetY) {
         this.movePlayer(helper, 0, -helper.playerSpeed);
       } else {
