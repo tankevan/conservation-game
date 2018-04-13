@@ -13,6 +13,8 @@ gameScene.init = function() {
   this.playerSpeed = 2.5;
   this.startingHealth = 500;
   this.globalHealth = this.startingHealth;
+  this.convincingBar = 0;
+  this.isConvincing = false;
   this.updateNumbers = false;
   this.shouldAddHelper = true;
 }
@@ -65,6 +67,16 @@ gameScene.create = function() {
     gameScene.clickedSprite(pointer, gameScene.recyclingBin.name, gameScene.recyclingBin);
   })
 
+  // add convincing booth
+  this.convincingBooth = this.add.sprite(500, 80, 'dragon')
+  this.convincingBooth.setScale(0.5);
+  this.convincingBooth.setInteractive();
+  this.convincingBooth.name = 'convincingBooth';
+  this.convincingBooth.clicked = false;
+  this.convincingBooth.on('pointerup', function(pointer) {
+    gameScene.clickedSprite(pointer, gameScene.convincingBooth.name, gameScene.convincingBooth);
+  })
+
   // player is alive
   this.isPlayerAlive = true;
 
@@ -77,6 +89,7 @@ gameScene.create = function() {
   });
 
   globalHealthText = this.add.text(10, 10, this.globalHealth);
+  convincingBarText = this.add.text(500, 10, this.convincingBar);
 
   // set timer to create trash every 2 seconds
   this.trashGroup = this.add.group();
@@ -95,6 +108,14 @@ gameScene.create = function() {
     delay: 1000,
     callback: addAnimal,
     callbackScope: this,
+    loop: true,
+  });
+
+  // set timer to check if should increment convincing bar
+  this.convincingEvent = this.time.addEvent({
+    delay: 100,
+    callback: gameScene.addConvincingBar,
+    callbackScope: gameScene,
     loop: true,
   });
 
@@ -158,8 +179,24 @@ function addAnimal() {
   }
 }
 
+gameScene.addConvincingBar = function() {
+  if (this.isConvincing && this.convincingBar < 100) {
+    this.convincingBar += 2;
+    convincingBarText.setText(this.convincingBar);
+  }
+}
+
 gameScene.clickedSprite = function(pointer, name, objRef) {
+  // unset convincing booth vars
+  console.log(pointer, name, this.convincingBooth.clicked);
+  if (name !== 'convincingBooth') { 
+    this.convincingBooth.clicked = false;
+    this.convincingBooth.isTargeted = false; 
+    this.isConvincing = false;
+  }
+
   if (!objRef.clicked && name !== 'recyclingBin') {
+    console.log(objRef.isTargeted);
     if (!objRef.isTargeted) {
       objRef.clicked = true;
       objRef.isTargeted = true;
@@ -172,6 +209,7 @@ gameScene.clickedSprite = function(pointer, name, objRef) {
   } else {
     this.player.gameActions.push([objRef.x, objRef.y, name, objRef]); 
   }
+  console.log(this.player.gameActions);
   this.updateNumbers = true;
 }
 
@@ -216,6 +254,8 @@ gameScene.update = function() {
           gameScene.reachAnimal(this.player, currObj);
         }, [], this);
       }
+    } else if (this.player.targetName === 'convincingBooth') {
+      gameScene.reachConvincing(this.player);
     }
   
     this.player.targetName = null;
@@ -356,7 +396,7 @@ gameScene.update = function() {
   }
 
  //if (this.shouldAddHelper) {
-  if (this.helperGroup.children.size < 2) {
+  if (this.convincingBar === 100 && this.helperGroup.children.size < 2) {
     this.addHelper();
   }
 };
@@ -394,6 +434,10 @@ gameScene.reachRecycling = function(player) {
   player.onHand = null;
 }
 
+gameScene.reachConvincing = function() {
+  gameScene.isConvincing = true;
+}
+
 gameScene.addHelper = function() {
   const helperX = this.sys.game.config.width / 2;
   const helperY = this.sys.game.config.height / 2;
@@ -402,8 +446,8 @@ gameScene.addHelper = function() {
   
   helper.playerSpeed = 2.5;
   helper.canMove = true;
-  helper.targetX = 200;
-  helper.targetY = 200;
+  helper.targetX = null;
+  helper.targetY = null;
   helper.targetName = null;
   helper.targetObj = null;
   helper.onHand = null;
@@ -413,9 +457,9 @@ gameScene.addHelper = function() {
   } else {
     helper.collectType = 'animal';
   }
-  console.log(helper.collectType);
 
   this.helperGroup.add(helper);
+  this.convincingBar = 0;
   this.shouldAddHelper = false;
 }
 
