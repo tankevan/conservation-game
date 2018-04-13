@@ -17,6 +17,7 @@ gameScene.init = function() {
   this.isConvincing = false;
   this.updateNumbers = false;
   this.shouldAddHelper = true;
+  this.maxHelpers = 2;
 }
 
 // load asset files for our game
@@ -180,7 +181,7 @@ function addAnimal() {
 }
 
 gameScene.addConvincingBar = function() {
-  if (this.isConvincing && this.convincingBar < 100) {
+  if (this.isConvincing && this.convincingBar < 100 && this.helperGroup.children.size < this.maxHelpers) {
     this.convincingBar += 2;
     convincingBarText.setText(this.convincingBar);
   }
@@ -396,7 +397,7 @@ gameScene.update = function() {
   }
 
  //if (this.shouldAddHelper) {
-  if (this.convincingBar === 100 && this.helperGroup.children.size < 2) {
+  if (this.convincingBar === 100 && this.helperGroup.children.size < this.maxHelpers) {
     this.addHelper();
   }
 };
@@ -460,6 +461,7 @@ gameScene.addHelper = function() {
 
   this.helperGroup.add(helper);
   this.convincingBar = 0;
+  convincingBarText.setText(this.convincingBar);
   this.shouldAddHelper = false;
 }
 
