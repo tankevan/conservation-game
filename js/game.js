@@ -308,6 +308,14 @@ gameScene.update = function() {
     return;
   }
 
+  // check if player won game
+  if (this.globalHealth >= this.winningHealth) {
+    globalHealthText.setText("YOU WIN!");
+    this.time.delayedCall(4000, function() {
+      this.gameOver();
+    }, [], this);
+  }
+
   // resolve previous action since coord is reached
   if (! this.player.targetX && ! this.player.targetY &&  this.player.targetName) {
     if ( this.player.targetName === "trash") {
