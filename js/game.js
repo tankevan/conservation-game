@@ -115,7 +115,7 @@ gameScene.create = function() {
   this.globalHealthBar = this.add.graphics()
   this.globalHealthBar.fillStyle(0xF08080);
   this.globalHealthBar.fillRect(10, 10, (this.globalHealth / this.winningHealth) * 200, 20);
-  globalHealthText = this.add.text(10, 10, this.globalHealth);
+  globalHealthText = this.add.text(15, 10, this.globalHealth);
   
 
   // set up convincing bar
