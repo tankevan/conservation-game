@@ -28,6 +28,7 @@ gameScene.preload = function() {
   this.load.image('player', 'assets/player.png');
   this.load.image('dragon', 'assets/dragon.png');
   this.load.image('treasure', 'assets/treasure.png');
+  this.load.image('booth', 'assets/stand.png');
   this.load.image('beach', 'assets/beach.png');
   this.load.image('beach2', 'assets/beach2.png');
   this.load.image('beach3', 'assets/beach3.png');
@@ -63,30 +64,31 @@ gameScene.create = function() {
     gameScene.clickedSprite(pointer, gameScene.recyclingBin.name, gameScene.recyclingBin);
   })
 
+  // player
+  this.player = this.add.sprite(40, this.sys.game.config.height / 2, 'player');
+  
+    // scale down
+    this.player.setScale(0.5);
+  
+    // player properties
+    this.player.canMove = true;
+    this.player.targetX = null;
+    this.player.targetY = null;
+    this.player.targetName = null;
+    this.player.targetObj = null;
+    this.player.onHand = null;
+    this.player.gameActions = []; // contains arrays of [x, y, name, obj]
+  
+
   // add convincing booth
-  this.convincingBooth = this.add.sprite(500, 80, 'dragon')
-  this.convincingBooth.setScale(0.5);
+  this.convincingBooth = this.add.sprite(500, 80, 'booth')
+  this.convincingBooth.setScale(0.8);
   this.convincingBooth.setInteractive();
   this.convincingBooth.name = 'convincingBooth';
   this.convincingBooth.clicked = false;
   this.convincingBooth.on('pointerup', function(pointer) {
     gameScene.clickedSprite(pointer, gameScene.convincingBooth.name, gameScene.convincingBooth);
   })
-
-  // player
-  this.player = this.add.sprite(40, this.sys.game.config.height / 2, 'player');
-
-  // scale down
-  this.player.setScale(0.5);
-
-  // player properties
-  this.player.canMove = true;
-  this.player.targetX = null;
-  this.player.targetY = null;
-  this.player.targetName = null;
-  this.player.targetObj = null;
-  this.player.onHand = null;
-  this.player.gameActions = []; // contains arrays of [x, y, name, obj]
 
   // player is alive
   this.isPlayerAlive = true;
@@ -110,7 +112,11 @@ gameScene.create = function() {
   
 
   // set up convincing bar
-  convincingBarText = this.add.text(500, 10, this.convincingBar);
+  this.convincingBarFill = this.add.graphics()
+  this.convincingBarFill.fillStyle('green');
+  this.convincingBarFill.fillRect(460, 30, this.convincingBar * 0.8, 10);
+  convincingBarText = this.add.text(470, 30, this.convincingBar)
+                              .setScale(0.5);
 
   // creates empty helper group
   this.helperGroup = this.add.group();
@@ -224,6 +230,9 @@ function addAnimal() {
 gameScene.addConvincingBar = function() {
   if (this.isConvincing && this.convincingBar < 100 && this.helperGroup.children.size < this.maxHelpers) {
     this.convincingBar += 2;
+    this.convincingBarFill.clear();
+    this.convincingBarFill.fillStyle(0x2E8B57);
+    this.convincingBarFill.fillRect(460, 30, this.convincingBar * 0.8, 10);
     convincingBarText.setText(this.convincingBar);
   }
 }
@@ -440,6 +449,8 @@ gameScene.update = function() {
  //if (this.shouldAddHelper) {
   if (this.convincingBar === 100 && this.helperGroup.children.size < this.maxHelpers) {
     this.addHelper();
+  } else if (this.helperGroup.children.size >= this.maxHelpers ) {
+    convincingBarText.destroy();
   }
 };
 
@@ -512,7 +523,9 @@ gameScene.addHelper = function() {
 
   this.helperGroup.add(helper);
   this.convincingBar = 0;
+  this.convincingBarFill.clear();
   convincingBarText.setText(this.convincingBar);
+
   this.shouldAddHelper = false;
 }
 
