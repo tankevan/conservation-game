@@ -11,7 +11,7 @@ let gameScene = new Phaser.Scene('Game');
 // some parameters for our scene
 gameScene.init = function() {
   this.playerSpeed = 2.5;
-  this.startingHealth = 500;
+  this.startingHealth = 200;
   this.globalHealth = this.startingHealth;
   this.convincingBar = 0;
   this.isConvincing = false;
@@ -28,6 +28,13 @@ gameScene.preload = function() {
   this.load.image('player', 'assets/player.png');
   this.load.image('dragon', 'assets/dragon.png');
   this.load.image('treasure', 'assets/treasure.png');
+  this.load.image('beach', 'assets/beach.png');
+  this.load.image('beach2', 'assets/beach2.png');
+  this.load.image('beach3', 'assets/beach3.png');
+  this.load.image('recycling', 'assets/recycling.png');
+  this.load.image('trash', 'assets/trash.png');
+  this.load.image('animal', 'assets/dead_turtle.png');
+  this.load.image('alive_animal', 'assets/alive_turtle.png');
 };
 
 
@@ -39,29 +46,14 @@ gameScene.preload = function() {
 gameScene.create = function() {
 
   // background
-  let bg = this.add.sprite(0, 0, 'background');
+  let bg = this.add.sprite(0, 0, 'beach3');
 
   // change origin to the top-left of the sprite
   bg.setOrigin(0, 0);
 
-  // player
-  this.player = this.add.sprite(40, this.sys.game.config.height / 2, 'player');
-
-  // scale down
-  this.player.setScale(0.5);
-
-  // player properties
-  this.player.canMove = true;
-  this.player.targetX = null;
-  this.player.targetY = null;
-  this.player.targetName = null;
-  this.player.targetObj = null;
-  this.player.onHand = null;
-  this.player.gameActions = []; // contains arrays of [x, y, name, obj]
-
   // add dragon trash bin
-  this.recyclingBin = this.add.sprite(30, 80, 'dragon');
-  this.recyclingBin.setScale(0.5);
+  this.recyclingBin = this.add.sprite(30, 80, 'recycling');
+  this.recyclingBin.setScale(0.4);
   this.recyclingBin.setInteractive();
   this.recyclingBin.name = "recyclingBin";
   this.recyclingBin.on('pointerup', function(pointer) {
@@ -78,6 +70,21 @@ gameScene.create = function() {
     gameScene.clickedSprite(pointer, gameScene.convincingBooth.name, gameScene.convincingBooth);
   })
 
+  // player
+  this.player = this.add.sprite(40, this.sys.game.config.height / 2, 'player');
+
+  // scale down
+  this.player.setScale(0.5);
+
+  // player properties
+  this.player.canMove = true;
+  this.player.targetX = null;
+  this.player.targetY = null;
+  this.player.targetName = null;
+  this.player.targetObj = null;
+  this.player.onHand = null;
+  this.player.gameActions = []; // contains arrays of [x, y, name, obj]
+
   // player is alive
   this.isPlayerAlive = true;
 
@@ -89,9 +96,22 @@ gameScene.create = function() {
     loop: true
   });
 
+  // set up global health bar
+  this.globalHealthBarBase = this.add.graphics();
+  this.globalHealthBarBase.fillStyle(0x000000);
+  this.globalHealthBarBase.fillRect(10,10,100,20)
+  this.globalHealthBar = this.add.graphics()
+  this.globalHealthBar.fillStyle(0xffff00);
+  this.globalHealthBar.fillRect(10, 10, (this.globalHealth / this.startingHealth) * 100, 20);
   globalHealthText = this.add.text(10, 10, this.globalHealth);
+  
+
+  // set up convincing bar
   convincingBarText = this.add.text(500, 10, this.convincingBar);
 
+  // creates empty helper group
+  this.helperGroup = this.add.group();
+  
   // set timer to create trash every 2 seconds
   this.trashGroup = this.add.group();
 
@@ -122,9 +142,6 @@ gameScene.create = function() {
 
   // creates empty game action order group for the action labels
   this.orderGroup = this.add.group();
-
-  // creates empty helper group
-  this.helperGroup = this.add.group();
 };
 
 // *** CREATE SUB-FUNCTIONS *** 
@@ -133,6 +150,9 @@ function countDown() {
   if (this.globalHealth > 0) {
     this.globalHealth -= 1;
     globalHealthText.setText(this.globalHealth);
+    this.globalHealthBar.clear();
+    this.globalHealthBar.fillStyle(0xffff00);
+    this.globalHealthBar.fillRect(10, 10, (this.globalHealth / this.startingHealth) * 100, 20);
   } else {
     this.gameOver();
   }
@@ -142,8 +162,8 @@ function addTrash() {
   if (this.trashGroup.children.size < 5) {
     const trashX = Math.random() * this.sys.game.config.width;
     const trashY = Math.random() * this.sys.game.config.height;
-    const trash = this.add.sprite(trashX, trashY, 'treasure')
-                          .setScale(0.6)
+    const trash = this.add.sprite(trashX, trashY, 'trash')
+                          .setScale(0.3)
                           .setInteractive();
 
     trash.name = "trash";
@@ -165,8 +185,8 @@ function addAnimal() {
   if (this.animalGroup.children.size < 5) {
     const animalX = Math.random() * this.sys.game.config.width;
     const animalY = Math.random() * this.sys.game.config.height;
-    const animal = this.add.sprite(animalX, animalY, 'dragon')
-                           .setScale(0.3)
+    const animal = this.add.sprite(animalX, animalY, 'animal')
+                           .setScale(0.1)
                            .setInteractive();
     
     animal.name = "animal";
@@ -422,10 +442,20 @@ gameScene.reachTrash = function(player, trash) {
 
 gameScene.reachAnimal = function(player, animal) {
   this.animalGroup.remove(animal);
-  animal.destroy();
+  animal.setTexture('alive_animal');
+  this.tweens.add({
+    targets: animal,
+    y: animal.y - 30,
+    alpha: 0,
+    duration: 2000,
+    repeat: false
+  });
   player.canMove = true;
   this.globalHealth += 10;
   globalHealthText.setText(this.globalHealth);
+  this.time.delayedCall(2000, function() {
+    animal.destroy();
+  }, [], this);
 }
 
 gameScene.reachRecycling = function(player) {
