@@ -33,6 +33,9 @@ gameScene.preload = function() {
   this.load.image('beach3', 'assets/beach3.png');
   this.load.image('recycling', 'assets/recycling.png');
   this.load.image('trash', 'assets/trash.png');
+  this.load.image('trash2', 'assets/trash2.png');
+  this.load.image('trash3', 'assets/trash3.png');
+  this.load.image('trash4', 'assets/trash4.png');
   this.load.image('animal', 'assets/dead_turtle.png');
   this.load.image('alive_animal', 'assets/alive_turtle.png');
 };
@@ -162,9 +165,27 @@ function addTrash() {
   if (this.trashGroup.children.size < 5) {
     const trashX = Math.random() * this.sys.game.config.width;
     const trashY = Math.random() * this.sys.game.config.height;
-    const trash = this.add.sprite(trashX, trashY, 'trash')
-                          .setScale(0.3)
-                          .setInteractive();
+
+    // which trash sprite to use
+    let trash;
+    const randTrash = Math.floor(Math.random() * 4);
+    if (randTrash === 0) {
+      trash = this.add.sprite(trashX, trashY, 'trash')
+                      .setScale(0.4)
+                      .setInteractive();
+    } else if (randTrash === 1) {
+      trash = this.add.sprite(trashX, trashY, 'trash2')
+                      .setScale(0.4)
+                      .setInteractive();
+    } else if(randTrash === 2) {
+      trash = this.add.sprite(trashX, trashY, 'trash3')
+                      .setScale(0.4)
+                      .setInteractive();
+    } else {
+      trash = this.add.sprite(trashX, trashY, 'trash4')
+                      .setScale(0.35)
+                      .setInteractive();
+    }
 
     trash.name = "trash";
     trash.clicked = false;
