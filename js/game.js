@@ -164,21 +164,24 @@ gameScene.create = function() {
 
 function countDown() {
   if (this.globalHealth > 0) {
-    this.globalHealth -= 1;
-    globalHealthText.setText(this.globalHealth);
-
-    // global health bar animation
-    let barColor;
-    if (this.globalHealth < 0.33 * this.winningHealth) {
-      barColor = this.thresholdColors.second;
-    } else if (this.globalHealth < 0.66 * this.winningHealth) {
-      barColor = this.thresholdColors.first;
-    } else {
-      barColor = this.thresholdColors.max;
+    console.log(this.globalHealth, this.isPlayerAlive);
+    if (this.isPlayerAlive) {
+      this.globalHealth -= 1;
+      globalHealthText.setText(this.globalHealth);
+  
+      // global health bar animation
+      let barColor;
+      if (this.globalHealth < 0.33 * this.winningHealth) {
+        barColor = this.thresholdColors.second;
+      } else if (this.globalHealth < 0.66 * this.winningHealth) {
+        barColor = this.thresholdColors.first;
+      } else {
+        barColor = this.thresholdColors.max;
+      }
+      this.globalHealthBar.clear();
+      this.globalHealthBar.fillStyle(barColor);
+      this.globalHealthBar.fillRect(10, 10, (this.globalHealth / this.winningHealth) * 200, 20); 
     }
-    this.globalHealthBar.clear();
-    this.globalHealthBar.fillStyle(barColor);
-    this.globalHealthBar.fillRect(10, 10, (this.globalHealth / this.winningHealth) * 200, 20);
   } else {
     this.gameOver();
   }
@@ -187,7 +190,7 @@ function countDown() {
 function addTrash() {
   if (this.trashGroup.children.size < 5) {
     const trashX = Math.random() * this.sys.game.config.width;
-    const trashY = Math.random() * this.sys.game.config.height;
+    const trashY = (Math.random() * 170) + 80;
 
     // which trash sprite to use
     let trash;
@@ -228,7 +231,8 @@ function addTrash() {
 function addAnimal() {
   if (this.animalGroup.children.size < 5) {
     const animalX = Math.random() * this.sys.game.config.width;
-    const animalY = Math.random() * this.sys.game.config.height;
+    const animalY = (Math.random() * 140) + 220;
+    console.log(animalY);
     const animal = this.add.sprite(animalX, animalY, 'animal')
                            .setScale(0.1)
                            .setInteractive();
@@ -303,17 +307,18 @@ gameScene.removeAction = function(xPos, yPos) {
 // executed on every frame (60 times per second)
 gameScene.update = function() {
 
+  // check if player won game
+  if ((this.globalHealth >= this.winningHealth) && this.isPlayerAlive) {
+    globalHealthText.setText("YOU WIN!");
+    this.isPlayerAlive = false;
+    this.time.delayedCall(3000, function() {
+      this.gameOver();
+    }, [], this);
+  }
+
   // only if the player is alive
   if (!this.isPlayerAlive) {
     return;
-  }
-
-  // check if player won game
-  if (this.globalHealth >= this.winningHealth) {
-    globalHealthText.setText("YOU WIN!");
-    this.time.delayedCall(4000, function() {
-      this.gameOver();
-    }, [], this);
   }
 
   // resolve previous action since coord is reached
@@ -499,6 +504,9 @@ gameScene.reachTrash = function(player, trash) {
 
 gameScene.reachAnimal = function(player, animal) {
   this.animalGroup.remove(animal);
+  player.canMove = true;
+  this.globalHealth += 10;
+  globalHealthText.setText(this.globalHealth);
   animal.setTexture('alive_animal');
   this.tweens.add({
     targets: animal,
@@ -507,9 +515,6 @@ gameScene.reachAnimal = function(player, animal) {
     duration: 2000,
     repeat: false
   });
-  player.canMove = true;
-  this.globalHealth += 10;
-  globalHealthText.setText(this.globalHealth);
   this.time.delayedCall(2000, function() {
     animal.destroy();
   }, [], this);
@@ -540,11 +545,17 @@ gameScene.addHelper = function() {
   helper.targetObj = null;
   helper.onHand = null;
   helper.gameActions = []; // contains arrays of [x, y, name, obj]
+
   if (Math.random() > 0.5) {
     helper.collectType = 'trash';
   } else {
     helper.collectType = 'animal';
   }
+
+  helper.setInteractive();
+  helper.on('pointerup', function(pointer) {
+    gameScene.changeHelperType(pointer, helper);
+  })
 
   this.helperGroup.add(helper);
   this.convincingBar = 0;
@@ -552,6 +563,15 @@ gameScene.addHelper = function() {
   convincingBarText.setText(this.convincingBar);
 
   this.shouldAddHelper = false;
+}
+
+gameScene.changeHelperType = function(pointer, helper) {
+  if (helper.collectType === 'trash') {
+    helper.collectType = 'animal';
+  } else {
+    helper.collectType = 'trash';
+  }
+  console.log('helper type changed to', helper.collectType);
 }
 
 // *************************
@@ -564,6 +584,17 @@ gameScene.gameOver = function() {
 
   // shake the camera
   this.cameras.main.shake(500);
+
+  // clear variables
+  this.timedEvent.remove(false);
+  this.trashEvent.remove(false)
+  this.animalEvent.remove(false);
+  this.convincingEvent.remove(false);
+  console.log(this.timedEvent);
+
+  this.trashGroup.children.clear();
+  this.animalGroup.children.clear();
+  this.helperGroup.children.clear();
 
   // fade camera
   this.time.delayedCall(250, function() {
@@ -579,13 +610,6 @@ gameScene.gameOver = function() {
   this.time.delayedCall(600, function() {
     this.cameras.main.resetFX();
   }, [], this);
-
-  // clear variables
-  this.timedEvent.destroy(); // destroy timer event
-  this.trashEvent.destroy(); // destroy trash event
-  this.trashGroup.children.clear();
-  
-
 };
 
 // our game's configuration
