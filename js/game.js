@@ -505,8 +505,23 @@ gameScene.reachTrash = function(player, trash) {
 gameScene.reachAnimal = function(player, animal) {
   this.animalGroup.remove(animal);
   player.canMove = true;
+
   this.globalHealth += 10;
+  this.globalHealth = Math.min(this.globalHealth, this.winningHealth);
   globalHealthText.setText(this.globalHealth);
+  // global health bar animation
+  let barColor;
+  if (this.globalHealth < 0.33 * this.winningHealth) {
+    barColor = this.thresholdColors.second;
+  } else if (this.globalHealth < 0.66 * this.winningHealth) {
+    barColor = this.thresholdColors.first;
+  } else {
+    barColor = this.thresholdColors.max;
+  }
+  this.globalHealthBar.clear();
+  this.globalHealthBar.fillStyle(barColor);
+  this.globalHealthBar.fillRect(10, 10, (this.globalHealth / this.winningHealth) * 200, 20); 
+
   animal.setTexture('alive_animal');
   this.tweens.add({
     targets: animal,
@@ -522,8 +537,23 @@ gameScene.reachAnimal = function(player, animal) {
 
 gameScene.reachRecycling = function(player) {
   player.onHand.destroy();
+
   this.globalHealth += 10;
+  this.globalHealth = Math.min(this.globalHealth, this.winningHealth);
   globalHealthText.setText(this.globalHealth);
+  // global health bar animation
+  let barColor;
+  if (this.globalHealth < 0.33 * this.winningHealth) {
+    barColor = this.thresholdColors.second;
+  } else if (this.globalHealth < 0.66 * this.winningHealth) {
+    barColor = this.thresholdColors.first;
+  } else {
+    barColor = this.thresholdColors.max;
+  }
+  this.globalHealthBar.clear();
+  this.globalHealthBar.fillStyle(barColor);
+  this.globalHealthBar.fillRect(10, 10, (this.globalHealth / this.winningHealth) * 200, 20); 
+
   player.onHand = null;
 }
 
