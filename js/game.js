@@ -11,8 +11,15 @@ let gameScene = new Phaser.Scene('Game');
 // some parameters for our scene
 gameScene.init = function() {
   this.playerSpeed = 2.5;
-  this.startingHealth = 200;
+  this.winningHealth = 100;
+  this.startingHealth = 20;
   this.globalHealth = this.startingHealth;
+  this.thresholdColors = {
+    max: 0x2E8B57, // green
+    first: 0xFFFF66, // yellow
+    second: 0xF08080, // red
+  };
+
   this.convincingBar = 0;
   this.isConvincing = false;
   this.updateNumbers = false;
@@ -56,8 +63,8 @@ gameScene.create = function() {
   bg.setOrigin(0, 0);
 
   // add dragon trash bin
-  this.recyclingBin = this.add.sprite(30, 80, 'recycling');
-  this.recyclingBin.setScale(0.4);
+  this.recyclingBin = this.add.sprite(40, 80, 'recycling');
+  this.recyclingBin.setScale(0.35);
   this.recyclingBin.setInteractive();
   this.recyclingBin.name = "recyclingBin";
   this.recyclingBin.on('pointerup', function(pointer) {
@@ -67,17 +74,17 @@ gameScene.create = function() {
   // player
   this.player = this.add.sprite(40, this.sys.game.config.height / 2, 'player');
   
-    // scale down
-    this.player.setScale(0.5);
-  
-    // player properties
-    this.player.canMove = true;
-    this.player.targetX = null;
-    this.player.targetY = null;
-    this.player.targetName = null;
-    this.player.targetObj = null;
-    this.player.onHand = null;
-    this.player.gameActions = []; // contains arrays of [x, y, name, obj]
+  // scale down
+  this.player.setScale(0.5);
+
+  // player properties
+  this.player.canMove = true;
+  this.player.targetX = null;
+  this.player.targetY = null;
+  this.player.targetName = null;
+  this.player.targetObj = null;
+  this.player.onHand = null;
+  this.player.gameActions = []; // contains arrays of [x, y, name, obj]
   
 
   // add convincing booth
@@ -104,10 +111,10 @@ gameScene.create = function() {
   // set up global health bar
   this.globalHealthBarBase = this.add.graphics();
   this.globalHealthBarBase.fillStyle(0x000000);
-  this.globalHealthBarBase.fillRect(10,10,100,20)
+  this.globalHealthBarBase.fillRect(10,10,200,20)
   this.globalHealthBar = this.add.graphics()
-  this.globalHealthBar.fillStyle(0xffff00);
-  this.globalHealthBar.fillRect(10, 10, (this.globalHealth / this.startingHealth) * 100, 20);
+  this.globalHealthBar.fillStyle(0xF08080);
+  this.globalHealthBar.fillRect(10, 10, (this.globalHealth / this.winningHealth) * 200, 20);
   globalHealthText = this.add.text(10, 10, this.globalHealth);
   
 
@@ -159,9 +166,19 @@ function countDown() {
   if (this.globalHealth > 0) {
     this.globalHealth -= 1;
     globalHealthText.setText(this.globalHealth);
+
+    // global health bar animation
+    let barColor;
+    if (this.globalHealth < 0.33 * this.winningHealth) {
+      barColor = this.thresholdColors.second;
+    } else if (this.globalHealth < 0.66 * this.winningHealth) {
+      barColor = this.thresholdColors.first;
+    } else {
+      barColor = this.thresholdColors.max;
+    }
     this.globalHealthBar.clear();
-    this.globalHealthBar.fillStyle(0xffff00);
-    this.globalHealthBar.fillRect(10, 10, (this.globalHealth / this.startingHealth) * 100, 20);
+    this.globalHealthBar.fillStyle(barColor);
+    this.globalHealthBar.fillRect(10, 10, (this.globalHealth / this.winningHealth) * 200, 20);
   } else {
     this.gameOver();
   }
