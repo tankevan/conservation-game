@@ -164,7 +164,6 @@ gameScene.create = function() {
 
 function countDown() {
   if (this.globalHealth > 0) {
-    console.log(this.globalHealth, this.isPlayerAlive);
     if (this.isPlayerAlive) {
       this.globalHealth -= 1;
       globalHealthText.setText(this.globalHealth);
@@ -232,7 +231,6 @@ function addAnimal() {
   if (this.animalGroup.children.size < 5) {
     const animalX = Math.random() * this.sys.game.config.width;
     const animalY = (Math.random() * 140) + 220;
-    console.log(animalY);
     const animal = this.add.sprite(animalX, animalY, 'animal')
                            .setScale(0.1)
                            .setInteractive();
@@ -260,7 +258,6 @@ gameScene.addConvincingBar = function() {
 
 gameScene.clickedSprite = function(pointer, name, objRef) {
   // unset convincing booth vars
-  console.log(pointer, name, this.convincingBooth.clicked);
   if (name !== 'convincingBooth') { 
     this.convincingBooth.clicked = false;
     this.convincingBooth.isTargeted = false; 
@@ -268,7 +265,6 @@ gameScene.clickedSprite = function(pointer, name, objRef) {
   }
 
   if (!objRef.clicked && name !== 'recyclingBin') {
-    console.log(objRef.isTargeted);
     if (!objRef.isTargeted) {
       objRef.clicked = true;
       objRef.isTargeted = true;
@@ -281,7 +277,6 @@ gameScene.clickedSprite = function(pointer, name, objRef) {
   } else {
     this.player.gameActions.push([objRef.x, objRef.y, name, objRef]); 
   }
-  console.log(this.player.gameActions);
   this.updateNumbers = true;
 }
 
@@ -601,7 +596,6 @@ gameScene.changeHelperType = function(pointer, helper) {
   } else {
     helper.collectType = 'trash';
   }
-  console.log('helper type changed to', helper.collectType);
 }
 
 // *************************
@@ -620,7 +614,6 @@ gameScene.gameOver = function() {
   this.trashEvent.remove(false)
   this.animalEvent.remove(false);
   this.convincingEvent.remove(false);
-  console.log(this.timedEvent);
 
   this.trashGroup.children.clear();
   this.animalGroup.children.clear();
