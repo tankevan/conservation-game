@@ -506,7 +506,7 @@ gameScene.reachAnimal = function(player, animal) {
   this.animalGroup.remove(animal);
   player.canMove = true;
 
-  this.globalHealth += 10;
+  this.globalHealth += 4;
   this.globalHealth = Math.min(this.globalHealth, this.winningHealth);
   globalHealthText.setText(this.globalHealth);
   // global health bar animation
@@ -538,7 +538,7 @@ gameScene.reachAnimal = function(player, animal) {
 gameScene.reachRecycling = function(player) {
   player.onHand.destroy();
 
-  this.globalHealth += 10;
+  this.globalHealth += 5;
   this.globalHealth = Math.min(this.globalHealth, this.winningHealth);
   globalHealthText.setText(this.globalHealth);
   // global health bar animation
