@@ -150,7 +150,7 @@ gameScene.create = function() {
 
   // set timer to check if should increment convincing bar
   this.convincingEvent = this.time.addEvent({
-    delay: 100,
+    delay: 180,
     callback: gameScene.addConvincingBar,
     callbackScope: gameScene,
     loop: true,
@@ -248,7 +248,8 @@ function addAnimal() {
 
 gameScene.addConvincingBar = function() {
   if (this.isConvincing && this.convincingBar < 100 && this.helperGroup.children.size < this.maxHelpers) {
-    this.convincingBar += 2;
+    this.convincingBar += 1;
+    console.log(this.convincingBar);
     this.convincingBarFill.clear();
     this.convincingBarFill.fillStyle(0x2E8B57);
     this.convincingBarFill.fillRect(460, 30, this.convincingBar * 0.8, 10);
